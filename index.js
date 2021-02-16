@@ -49,7 +49,7 @@ const app = express();
 app.set('view engine', 'ejs');
 
 // Public Folder
-app.use(express.static("uploads"));
+app.use(express.static("."));
 
 app.get('/', (req, res) => {
     Car.find()
@@ -64,33 +64,24 @@ app.get('/', (req, res) => {
 });
 
 app.post('/', (req, res) => {
-    upload(req, res, (err) => {
-        if (err) {
-            res.render('index', {
-                msg: err
+    upload(req, res, async(err) => {
+        const { name, color, price } = req.body
+        const car = new Car({
+            photo: "uploads/" + req.file.filename,
+            name: name,
+            color: color,
+            price: price
+        });
+        await car.save();
+        Car.find()
+            .then((result) => {
+                res.render("index", {
+                    cars: result
+                })
+            })
+            .catch((err) => {
+                res.send(err)
             });
-        } else {
-            if (req.file == undefined) {
-                res.render('index', {
-                    msg: 'Error: No File Selected!'
-                });
-            } else {
-                const car = new Car({
-                    photo: "uploads/" + req.file.filename
-                });
-                car.save();
-                Car.find()
-                    .then((result) => {
-                        res.render("index", {
-                            cars: result,
-                            msg: 'File Uploaded!'
-                        })
-                    })
-                    .catch((err) => {
-                        res.send(err)
-                    });
-            }
-        }
     });
 });
 
